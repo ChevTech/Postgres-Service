@@ -27,48 +27,53 @@ public class Postgres {
     }
 
     /* CRUD - CREATE, READ, UPDATE, DELETE */
-    public City getCity(String cityName) throws SQLException {
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
+    public City getCity(String cityName) {
         City city = null;
 
-        try {
-            String query = "SELECT name, location FROM cities " +
-                    "WHERE name = ?";
+        String query = "SELECT name, location FROM cities " +
+                            "WHERE name = ?";
 
-            stmt = conn.prepareStatement(query);
+        try(PreparedStatement stmt = conn.prepareStatement(query)){
             stmt.setString(1, cityName);
-            rs = stmt.executeQuery();
+            ResultSet rs = stmt.executeQuery();
 
             while(rs.next()){
                 String name = rs.getString("name");
                 PGpoint location = (PGpoint) rs.getObject("location");
                 city = new City(name, location);
             }
-
         } catch (SQLException e){
             printSQLException(e);
-        } finally {
-            if(stmt != null) { stmt.close(); }
         }
 
         return city;
     }
 
-    public void insertCity(City city) throws SQLException {
-        PreparedStatement stmt = null;
+    public void insertCity(City city) {
+        String query = "INSERT INTO cities (name, location) " +
+                            "VALUES (?, ?);";
 
-        try {
-            stmt = conn.prepareStatement("INSERT INTO cities (name, location) " +
-                                                "VALUES (?, ?);");
-
+        try(PreparedStatement stmt = conn.prepareStatement(query)){
             stmt.setString(1, city.getName());
             stmt.setObject(2, city.getLocation());
             stmt.executeUpdate();
         } catch (SQLException e){
             printSQLException(e);
-        } finally {
-            if(stmt != null) { stmt.close(); }
+        }
+    }
+
+    public void updateCityLocation(City city) {
+        String updateQuery = "UPDATE cities " +
+                                "SET location = ? " +
+                                "WHERE name = ?";
+
+        try(PreparedStatement stmt = conn.prepareStatement(updateQuery)){
+            stmt.setObject(1, city.getLocation());
+            stmt.setString(2, city.getName());
+            int rowsUpdated = stmt.executeUpdate();
+            System.out.println(rowsUpdated);
+        } catch (SQLException ex){
+            printSQLException(ex);
         }
     }
 
@@ -172,8 +177,10 @@ public class Postgres {
             conn.commit();
         } catch (BatchUpdateException batchEx) {
             printBatchUpdateException(batchEx);
+            conn.rollback();
         } catch (SQLException e) {
             printSQLException(e);
+            conn.rollback();
         } finally {
             if(stmt != null) stmt.close();
             conn.setAutoCommit(true);

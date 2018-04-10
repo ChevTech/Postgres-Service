@@ -4,12 +4,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.xml.ws.Response;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
 import static com.chevtech.Utils.printSQLException;
-import static org.springframework.web.bind.annotation.RequestMethod.*;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 @RestController
 public class PostgresController {
@@ -17,25 +19,20 @@ public class PostgresController {
 
     @RequestMapping(method=POST, value="/city")
     public ResponseEntity<?> insertCity(@RequestBody City input) {
-        try {
-            pg.insertCity(input);
-        } catch (SQLException ex){
-            printSQLException(ex);
-        }
+        pg.insertCity(input);
+        return ResponseEntity.ok().build();
+    }
 
+    @RequestMapping(method=PUT, value="/city")
+    public ResponseEntity<?> updateCityLocation(@RequestBody City input) {
+        pg.updateCityLocation(input);
         return ResponseEntity.ok().build();
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @RequestMapping(method=GET, value="/city/{cityName}")
     public City getCity(@PathVariable String cityName) {
-        City city = null;
-
-        try {
-            city = pg.getCity(cityName);
-        } catch (SQLException ex){
-            printSQLException(ex);
-        }
+        City city = pg.getCity(cityName);
 
         if(city == null){
             throw new CityNotFoundException(cityName);
